@@ -2,38 +2,41 @@ SHELL := /bin/sh
 
 BIN := cier
 PKG := ./cmd/cier
-GOCACHE_DIR := /tmp/go-cache
 
 .PHONY: build tidy fmt vet test lint clean help
 
 help:
 	@echo "CIer Makefile"
 	@echo "Targets:"
-	@echo "  build  - Build the CLI binary"
-	@echo "  tidy   - Run go mod tidy"
-	@echo "  fmt    - Run gofmt on all Go files"
-	@echo "  vet    - Run go vet"
-	@echo "  test   - Run tests"
-	@echo "  lint   - Run basic static checks"
-	@echo "  clean  - Remove build artifacts"
+	@echo "  build    - Build the CLI binary"
+	@echo "  install  - Install to \\$GOPATH"
+	@echo "  tidy     - Run go mod tidy"
+	@echo "  fmt      - Run gofmt on all Go files"
+	@echo "  vet      - Run go vet"
+	@echo "  test     - Run tests"
+	@echo "  lint     - Run basic static checks"
+	@echo "  clean    - Remove build artifacts"
 
 build:
-	GOCACHE=$(GOCACHE_DIR) go build -o $(BIN) $(PKG)
+	go build -o bin/$(BIN) ./cmd/$(BIN)
 
 tidy:
-	GOCACHE=$(GOCACHE_DIR) go mod tidy
+	go mod tidy
 
 fmt:
 	gofmt -w $$(rg --files -g '*.go')
 
 vet:
-	GOCACHE=$(GOCACHE_DIR) go vet ./...
+	go vet ./...
 
 test:
-	GOCACHE=$(GOCACHE_DIR) go test ./...
+	go test ./...
 
 lint: fmt vet
 	@echo "lint: ok"
 
 clean:
-	rm -f $(BIN)
+	rm -rf bin dist
+
+install:
+	go install ./cmd/$(BIN)
