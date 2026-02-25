@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
@@ -20,7 +21,12 @@ func main() {
 		Short: "CIer — collect and roll out GitHub Actions workflows",
 	}
 
-	rootCmd.PersistentFlags().StringVar(&dbPath, "db", "", "SQLite database path (default: ~/.config/cier/cier.db or CIER_DB)")
+	rootCmd.PersistentFlags().StringVar(
+		&dbPath,
+		"db",
+		"",
+		"SQLite database path (default: ~/.config/cier/cier.db or CIER_DB)",
+	)
 
 	rootCmd.AddCommand(scanCmd(&dbPath))
 	rootCmd.AddCommand(rollCmd(&dbPath))
@@ -34,21 +40,24 @@ func main() {
 	}
 }
 
+func openSqlite(dbPath *string) (*sql.DB, error) {
+	path := *dbPath
+	if path == "" {
+		var err error
+		path, err = db.DefaultDBPath()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return db.Open(path)
+}
+
 func scanCmd(dbPath *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "scan [dirs...]",
 		Short: "Scan directories and add new workflows to the database",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := *dbPath
-			if path == "" {
-				var err error
-				path, err = db.DefaultDBPath()
-				if err != nil {
-					return err
-				}
-			}
-
-			database, err := db.Open(path)
+			database, err := openSqlite(dbPath)
 			if err != nil {
 				return err
 			}
@@ -66,16 +75,7 @@ func rollCmd(dbPath *string) *cobra.Command {
 		Use:   "roll",
 		Short: "Collect selected workflows and open them in nvim",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := *dbPath
-			if path == "" {
-				var err error
-				path, err = db.DefaultDBPath()
-				if err != nil {
-					return err
-				}
-			}
-
-			database, err := db.Open(path)
+			database, err := openSqlite(dbPath)
 			if err != nil {
 				return err
 			}
@@ -98,16 +98,7 @@ func removeCmd(dbPath *string) *cobra.Command {
 		Use:   "remove",
 		Short: "Remove workflows from a group and add to the blacklist",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := *dbPath
-			if path == "" {
-				var err error
-				path, err = db.DefaultDBPath()
-				if err != nil {
-					return err
-				}
-			}
-
-			database, err := db.Open(path)
+			database, err := openSqlite(dbPath)
 			if err != nil {
 				return err
 			}
@@ -125,16 +116,7 @@ func moveCmd(dbPath *string) *cobra.Command {
 		Use:   "move",
 		Short: "Move workflows to another group",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := *dbPath
-			if path == "" {
-				var err error
-				path, err = db.DefaultDBPath()
-				if err != nil {
-					return err
-				}
-			}
-
-			database, err := db.Open(path)
+			database, err := openSqlite(dbPath)
 			if err != nil {
 				return err
 			}
@@ -165,16 +147,7 @@ func blacklistListCmd(dbPath *string) *cobra.Command {
 		Use:   "list",
 		Short: "Show the blacklist",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := *dbPath
-			if path == "" {
-				var err error
-				path, err = db.DefaultDBPath()
-				if err != nil {
-					return err
-				}
-			}
-
-			database, err := db.Open(path)
+			database, err := openSqlite(dbPath)
 			if err != nil {
 				return err
 			}
@@ -191,16 +164,7 @@ func blacklistAddCmd(dbPath *string) *cobra.Command {
 		Short: "Add paths to the blacklist",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := *dbPath
-			if path == "" {
-				var err error
-				path, err = db.DefaultDBPath()
-				if err != nil {
-					return err
-				}
-			}
-
-			database, err := db.Open(path)
+			database, err := openSqlite(dbPath)
 			if err != nil {
 				return err
 			}
@@ -216,16 +180,7 @@ func blacklistRestoreCmd(dbPath *string) *cobra.Command {
 		Use:   "restore [paths...]",
 		Short: "Remove paths from the blacklist",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path := *dbPath
-			if path == "" {
-				var err error
-				path, err = db.DefaultDBPath()
-				if err != nil {
-					return err
-				}
-			}
-
-			database, err := db.Open(path)
+			database, err := openSqlite(dbPath)
 			if err != nil {
 				return err
 			}
