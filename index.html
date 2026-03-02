@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cier · workflow toolkit</title>
+  <!-- технический шрифт IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* сброс */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* светлая тема, спокойные тона */
+    :root {
+      --bg: #ffffff;
+      --surface: #f2f4f8;
+      --surface-hover: #e9ecf0;
+      --text: #1e2b3c;
+      --text-muted: #4d6275;
+      --accent: #3b6e9c;        /* приглушённый синий */
+      --accent-dim: #2c5680;
+      --border: #cfd9e6;
+      --font-main: 'IBM Plex Mono', 'Menlo', 'Monaco', 'Cascadia Code', 'Fira Code', monospace;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 1rem;
+      line-height: 1.6;
+      padding: 2rem 1.5rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* контейнер уже, компактнее */
+    .container {
+      max-width: 880px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* типографика */
+    h1, h2, h3 {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 6vw, 3.5rem);  /* чуть поменьше */
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
+    h1::before {
+      content: '> ';
+      color: var(--accent);
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-weight: 600;
+    }
+
+    h2::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, var(--accent) 0px, var(--accent) 8px, transparent 8px, transparent 16px);
+    }
+
+    p {
+      color: var(--text-muted);
+      max-width: 70ch;
+      margin-bottom: 1rem;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px dashed var(--accent);
+      transition: none;
+    }
+
+    a:hover {
+      background: var(--accent);
+      color: white;
+      border-bottom: 1px solid var(--accent);
+    }
+
+    /* навигация */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1rem;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: lowercase;
+    }
+
+    .logo::before {
+      content: '$ ';
+      color: var(--text-muted);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .nav-links a {
+      color: var(--text);
+      border-bottom: none;
+      position: relative;
+    }
+
+    .nav-links a::before {
+      content: '[';
+      color: var(--accent);
+      margin-right: 4px;
+    }
+
+    .nav-links a::after {
+      content: ']';
+      color: var(--accent);
+      margin-left: 4px;
+    }
+
+    .nav-links a:hover {
+      background: transparent;
+      color: var(--accent);
+    }
+
+    /* hero */
+    .hero {
+      margin-bottom: 5rem;
+      border-left: 4px solid var(--accent);
+      padding-left: 2rem;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: transparent;
+      color: var(--text);
+      border: 2px solid var(--border);
+      padding: 0.6rem 1.8rem;
+      font-family: var(--font-main);
+      font-size: 1rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: 0.1s linear;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .button-primary {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .button-primary:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .button:hover {
+      background: var(--surface-hover);
+      border-color: var(--accent);
+    }
+
+    /* features — иконки удалены */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin: 3rem 0;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      padding: 2rem 1.5rem;
+      transition: 0.1s linear;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .feature-card h3 {
+      font-size: 1.3rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+    }
+
+    /* блоки кода */
+    .code-block {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      padding: 1rem 1.5rem;
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin: 1.5rem 0 2rem;
+    }
+
+    .code-block code {
+      color: var(--accent);
+      word-break: break-word;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.3rem 1rem;
+      font-family: var(--font-main);
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: 0.1s linear;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: transparent;
+    }
+
+    /* таблица команд */
+    .commands {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      margin: 2rem 0;
+    }
+
+    .command-row {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      font-family: var(--font-main);
+      font-size: 0.9rem;
+    }
+
+    .command-row:last-child {
+      border-bottom: none;
+    }
+
+    .command-cmd {
+      flex: 0 0 260px;
+      padding: 1rem 1.5rem;
+      background: #e9edf3;  /* чуть темнее поверхности */
+      color: var(--accent);
+      font-weight: 500;
+      border-right: 2px solid var(--border);
+    }
+
+    .command-desc {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      color: var(--text-muted);
+    }
+
+    /* футер */
+    .footer {
+      margin-top: 5rem;
+      padding-top: 1.5rem;
+      border-top: 2px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .footer-links a {
+      border-bottom: none;
+    }
+
+    .footer-links a::before {
+      content: '[';
+      color: var(--accent);
+      margin-right: 4px;
+    }
+
+    .footer-links a::after {
+      content: ']';
+      color: var(--accent);
+      margin-left: 4px;
+    }
+
+    /* терминальный курсор (оставим как деталь) */
+    .cursor {
+      display: inline-block;
+      width: 0.6em;
+      height: 1.2em;
+      background: var(--accent);
+      vertical-align: middle;
+      margin-left: 4px;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* адаптация */
+    @media (max-width: 700px) {
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .nav-links {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+      .command-row {
+        flex-direction: column;
+      }
+      .command-cmd {
+        border-right: none;
+        border-bottom: 2px solid var(--border);
+        flex: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- шапка -->
+    <nav class="navbar">
+      <span class="logo">cier</span>
+      <div class="nav-links">
+        <a href="#features">features</a>
+        <a href="#install">install</a>
+        <a href="#usage">usage</a>
+        <a href="https://github.com/yourusername/cier" target="_blank">github</a>
+      </div>
+    </nav>
+
+    <!-- hero (без иконок) -->
+    <section class="hero">
+      <h1>CIer</h1>
+      <p># collect, organize and deploy github actions workflows<br># from multiple repositories — like a package manager for ci</p>
+      <div class="cta-buttons">
+        <a href="#install" class="button button-primary">$ install cier</a>
+        <a href="https://github.com/yourusername/cier" class="button">view source <span class="cursor"></span></a>
+      </div>
+    </section>
+
+    <!-- фичи (иконки удалены) -->
+    <section id="features">
+      <h2># capabilities</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <h3>scan</h3>
+          <p>recursively find .github/workflows/*.ya?ml, store in local sqlite. never lose track of useful ci files.</p>
+        </div>
+        <div class="feature-card">
+          <h3>group</h3>
+          <p>assign workflows to custom groups (node, go, docker, etc). filter and act on groups, not paths.</p>
+        </div>
+        <div class="feature-card">
+          <h3>roll</h3>
+          <p>select group → open each workflow in nvim with a header comment. save to current project, adapt on the fly.</p>
+        </div>
+        <div class="feature-card">
+          <h3>blacklist</h3>
+          <p>remove noisy workflows, restore later, or move between groups. full control over your collection.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- установка -->
+    <section id="install">
+      <h2># install</h2>
+      <p>build from source (requires go 1.19+)</p>
+      <div class="code-block">
+        <code>GOCACHE=/tmp/go-cache go build ./cmd/cier</code>
+        <button class="copy-btn" data-cmd="GOCACHE=/tmp/go-cache go build ./cmd/cier">copy</button>
+      </div>
+      <p>or grab a binary from <a href="#">releases</a>. database lives in <code>~/.config/cier/cier.db</code>.</p>
+    </section>
+
+    <!-- использование -->
+    <section id="usage">
+      <h2># usage</h2>
+      <p>all commands are designed to be simple and composable.</p>
+
+      <div class="commands">
+        <div class="command-row">
+          <div class="command-cmd">cier scan &lt;dir&gt; ...</div>
+          <div class="command-desc">scan directories, insert new workflows into db</div>
+        </div>
+        <div class="command-row">
+          <div class="command-cmd">cier roll</div>
+          <div class="command-desc">interactive group picker → open workflows in nvim</div>
+        </div>
+        <div class="command-row">
+          <div class="command-cmd">cier remove</div>
+          <div class="command-desc">remove workflows from a group and blacklist them</div>
+        </div>
+        <div class="command-row">
+          <div class="command-cmd">cier move</div>
+          <div class="command-desc">move workflows to another group</div>
+        </div>
+        <div class="command-row">
+          <div class="command-cmd">cier blacklist list</div>
+          <div class="command-desc">show blacklisted paths</div>
+        </div>
+        <div class="command-row">
+          <div class="command-cmd">cier blacklist add &lt;path&gt; ...</div>
+          <div class="command-desc">add paths to blacklist</div>
+        </div>
+        <div class="command-row">
+          <div class="command-cmd">cier blacklist restore [paths...]</div>
+          <div class="command-desc">remove from blacklist (if empty — restore all)</div>
+        </div>
+      </div>
+
+      <p>custom db: <code>--db /path.db</code> or <code>CIER_DB=/path.db</code></p>
+    </section>
+
+    <!-- футер -->
+    <footer class="footer">
+      <div>© 2025 cier — mit license</div>
+      <div class="footer-links">
+        <a href="#">docs</a>
+        <a href="https://github.com/yourusername/cier/issues">issues</a>
+        <a href="https://github.com/yourusername/cier">github</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      const copyBtns = document.querySelectorAll('.copy-btn');
+      copyBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+          const cmd = this.getAttribute('data-cmd') || this.previousElementSibling?.textContent;
+          if (!cmd) return;
+          navigator.clipboard.writeText(cmd).then(() => {
+            const orig = this.textContent;
+            this.textContent = 'copied';
+            setTimeout(() => this.textContent = orig, 1000);
+          }).catch(() => {
+            this.textContent = 'fail';
+          });
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
