@@ -17,58 +17,56 @@ type GroupChoice struct {
 }
 
 func SelectGroup(groups []string) (GroupChoice, error) {
-	for {
-		options := groupOptions(groups)
-		options = append(options, huh.NewOption("+ Create new group", "__new__"))
-		options = append(options, huh.NewOption("Do not add (blacklist)", "__ignore__"))
-		options = append(options, huh.NewOption("Stop scanning", "__stop__"))
+	options := groupOptions(groups)
+	options = append(options, huh.NewOption("+ Create new group", "__new__"))
+	options = append(options, huh.NewOption("Do not add (blacklist)", "__ignore__"))
+	options = append(options, huh.NewOption("Stop scanning", "__stop__"))
 
-		var selected string
-		form := newForm(
+	var selected string
+	form := newForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Select a group").
+				Options(options...).
+				Value(&selected),
+		),
+	)
+
+	if err := form.Run(); err != nil {
+		return GroupChoice{}, err
+	}
+
+	if selected == "__new__" {
+		var name string
+		input := newForm(
 			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("Select a group").
-					Options(options...).
-					Value(&selected),
+				huh.NewInput().
+					Title("New group name").
+					Value(&name),
 			),
 		)
 
-		if err := form.Run(); err != nil {
+		if err := input.Run(); err != nil {
 			return GroupChoice{}, err
 		}
 
-		if selected == "__new__" {
-			var name string
-			input := newForm(
-				huh.NewGroup(
-					huh.NewInput().
-						Title("New group name").
-						Value(&name),
-				),
-			)
-
-			if err := input.Run(); err != nil {
-				return GroupChoice{}, err
-			}
-
-			name = strings.TrimSpace(name)
-			if name == "" {
-				return GroupChoice{}, fmt.Errorf("group name is empty")
-			}
-
-			return GroupChoice{Name: name, New: true}, nil
+		name = strings.TrimSpace(name)
+		if name == "" {
+			return GroupChoice{}, fmt.Errorf("group name is empty")
 		}
 
-		if selected == "__ignore__" {
-			return GroupChoice{Ignore: true}, nil
-		}
-
-		if selected == "__stop__" {
-			return GroupChoice{Stop: true}, nil
-		}
-
-		return GroupChoice{Name: selected, New: false}, nil
+		return GroupChoice{Name: name, New: true}, nil
 	}
+
+	if selected == "__ignore__" {
+		return GroupChoice{Ignore: true}, nil
+	}
+
+	if selected == "__stop__" {
+		return GroupChoice{Stop: true}, nil
+	}
+
+	return GroupChoice{Name: selected, New: false}, nil
 }
 
 func SelectGroupForPath(groups []string, path string, projectRoot string) (GroupChoice, error) {
@@ -80,63 +78,61 @@ func SelectGroupForPath(groups []string, path string, projectRoot string) (Group
 		}
 	}
 
-	for {
-		options := groupOptions(groups)
-		options = append(options, huh.NewOption("+ Create new group", "__new__"))
-		options = append(options, huh.NewOption("Open (read-only)", "__open__"))
-		options = append(options, huh.NewOption("Do not add (blacklist)", "__ignore__"))
-		options = append(options, huh.NewOption("Stop scanning", "__stop__"))
+	options := groupOptions(groups)
+	options = append(options, huh.NewOption("+ Create new group", "__new__"))
+	options = append(options, huh.NewOption("Open (read-only)", "__open__"))
+	options = append(options, huh.NewOption("Do not add (blacklist)", "__ignore__"))
+	options = append(options, huh.NewOption("Stop scanning", "__stop__"))
 
-		var selected string
-		form := newForm(
+	var selected string
+	form := newForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title(title).
+				Options(options...).
+				Value(&selected),
+		),
+	)
+
+	if err := form.Run(); err != nil {
+		return GroupChoice{}, err
+	}
+
+	if selected == "__open__" {
+		return GroupChoice{Open: true}, nil
+	}
+
+	if selected == "__new__" {
+		var name string
+		input := newForm(
 			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title(title).
-					Options(options...).
-					Value(&selected),
+				huh.NewInput().
+					Title("New group name").
+					Value(&name),
 			),
 		)
 
-		if err := form.Run(); err != nil {
+		if err := input.Run(); err != nil {
 			return GroupChoice{}, err
 		}
 
-		if selected == "__open__" {
-			return GroupChoice{Open: true}, nil
+		name = strings.TrimSpace(name)
+		if name == "" {
+			return GroupChoice{}, fmt.Errorf("group name is empty")
 		}
 
-		if selected == "__new__" {
-			var name string
-			input := newForm(
-				huh.NewGroup(
-					huh.NewInput().
-						Title("New group name").
-						Value(&name),
-				),
-			)
-
-			if err := input.Run(); err != nil {
-				return GroupChoice{}, err
-			}
-
-			name = strings.TrimSpace(name)
-			if name == "" {
-				return GroupChoice{}, fmt.Errorf("group name is empty")
-			}
-
-			return GroupChoice{Name: name, New: true}, nil
-		}
-
-		if selected == "__ignore__" {
-			return GroupChoice{Ignore: true}, nil
-		}
-
-		if selected == "__stop__" {
-			return GroupChoice{Stop: true}, nil
-		}
-
-		return GroupChoice{Name: selected, New: false}, nil
+		return GroupChoice{Name: name, New: true}, nil
 	}
+
+	if selected == "__ignore__" {
+		return GroupChoice{Ignore: true}, nil
+	}
+
+	if selected == "__stop__" {
+		return GroupChoice{Stop: true}, nil
+	}
+
+	return GroupChoice{Name: selected, New: false}, nil
 }
 
 type GroupSelection struct {
