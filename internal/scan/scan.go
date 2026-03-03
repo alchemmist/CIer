@@ -31,7 +31,11 @@ func Run(database *sql.DB, roots []string) error {
 }
 
 func scanRoot(database *sql.DB, root string) error {
-	root = filepath.Clean(root)
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return fmt.Errorf("resolve root %q: %w", root, err)
+	}
+	root = filepath.Clean(absRoot)
 
 	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

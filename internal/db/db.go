@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "modernc.org/sqlite"
 )
@@ -94,8 +95,17 @@ func migrate(db *sql.DB) error {
 }
 
 func IsIgnored(db *sql.DB, path string) (bool, error) {
+	variants := pathVariants(path)
+	if len(variants) == 0 {
+		return false, fmt.Errorf("ignored path is empty")
+	}
+
 	var p string
-	err := db.QueryRow(`SELECT path FROM ignored WHERE path = ?`, path).Scan(&p)
+	err := queryPathRow(
+		db,
+		`SELECT path FROM ignored WHERE path`,
+		variants,
+	).Scan(&p)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -106,19 +116,27 @@ func IsIgnored(db *sql.DB, path string) (bool, error) {
 }
 
 func AddIgnored(db *sql.DB, path string) error {
-	if path == "" {
-		return fmt.Errorf("ignored path is empty")
+	normalized, err := normalizePath(path)
+	if err != nil {
+		return fmt.Errorf("normalize ignored path: %w", err)
 	}
-	if _, err := db.Exec(`INSERT OR IGNORE INTO ignored(path) VALUES (?)`, path); err != nil {
+	if _, err := db.Exec(`INSERT OR IGNORE INTO ignored(path) VALUES (?)`, normalized); err != nil {
 		return fmt.Errorf("insert ignored: %w", err)
 	}
 	return nil
 }
 
 func RemoveIgnored(db *sql.DB, path string) error {
-	if _, err := db.Exec(`DELETE FROM ignored WHERE path = ?`, path); err != nil {
+	variants := pathVariants(path)
+	if len(variants) == 0 {
+		return fmt.Errorf("ignored path is empty")
+	}
+
+	res, err := execPathStmt(db, `DELETE FROM ignored WHERE path`, variants)
+	if err != nil {
 		return fmt.Errorf("remove ignored: %w", err)
 	}
+	_ = res
 	return nil
 }
 
@@ -184,8 +202,17 @@ func EnsureGroup(db *sql.DB, name string) (Group, error) {
 }
 
 func WorkflowExists(db *sql.DB, path string) (bool, error) {
+	variants := pathVariants(path)
+	if len(variants) == 0 {
+		return false, fmt.Errorf("workflow path is empty")
+	}
+
 	var id int64
-	err := db.QueryRow(`SELECT id FROM workflows WHERE path = ?`, path).Scan(&id)
+	err := queryPathRow(
+		db,
+		`SELECT id FROM workflows WHERE path`,
+		variants,
+	).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -196,11 +223,12 @@ func WorkflowExists(db *sql.DB, path string) (bool, error) {
 }
 
 func AddWorkflow(db *sql.DB, path string, groupID int64, projectRoot string) error {
-	if path == "" {
-		return fmt.Errorf("workflow path is empty")
+	normalized, err := normalizePath(path)
+	if err != nil {
+		return fmt.Errorf("normalize workflow path: %w", err)
 	}
 
-	if _, err := db.Exec(`INSERT OR IGNORE INTO workflows(path, group_id, project_root) VALUES (?, ?, ?)`, path, groupID, projectRoot); err != nil {
+	if _, err := db.Exec(`INSERT OR IGNORE INTO workflows(path, group_id, project_root) VALUES (?, ?, ?)`, normalized, groupID, projectRoot); err != nil {
 		return fmt.Errorf("insert workflow: %w", err)
 	}
 	return nil
@@ -264,15 +292,91 @@ func ListAllWorkflows(db *sql.DB) ([]Workflow, error) {
 }
 
 func RemoveWorkflow(db *sql.DB, path string) error {
-	if _, err := db.Exec(`DELETE FROM workflows WHERE path = ?`, path); err != nil {
+	variants := pathVariants(path)
+	if len(variants) == 0 {
+		return fmt.Errorf("workflow path is empty")
+	}
+
+	res, err := execPathStmt(db, `DELETE FROM workflows WHERE path`, variants)
+	if err != nil {
 		return fmt.Errorf("remove workflow: %w", err)
 	}
+	_ = res
 	return nil
 }
 
 func MoveWorkflow(db *sql.DB, path string, groupID int64) error {
-	if _, err := db.Exec(`UPDATE workflows SET group_id = ? WHERE path = ?`, groupID, path); err != nil {
+	variants := pathVariants(path)
+	if len(variants) == 0 {
+		return fmt.Errorf("workflow path is empty")
+	}
+
+	res, err := execPathStmtWithGroup(db, `UPDATE workflows SET group_id = ? WHERE path`, groupID, variants)
+	if err != nil {
 		return fmt.Errorf("move workflow: %w", err)
 	}
+	_ = res
 	return nil
+}
+
+func normalizePath(path string) (string, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return "", fmt.Errorf("path is empty")
+	}
+
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Clean(abs), nil
+}
+
+func pathVariants(path string) []string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return nil
+	}
+
+	var variants []string
+	seen := map[string]struct{}{}
+	add := func(p string) {
+		p = filepath.Clean(p)
+		if p == "" {
+			return
+		}
+		if _, ok := seen[p]; ok {
+			return
+		}
+		seen[p] = struct{}{}
+		variants = append(variants, p)
+	}
+
+	add(path)
+	if abs, err := filepath.Abs(path); err == nil {
+		add(abs)
+	}
+
+	return variants
+}
+
+func queryPathRow(db *sql.DB, baseQuery string, paths []string) *sql.Row {
+	if len(paths) == 1 {
+		return db.QueryRow(baseQuery+` = ? LIMIT 1`, paths[0])
+	}
+	return db.QueryRow(baseQuery+` IN (?, ?) LIMIT 1`, paths[0], paths[1])
+}
+
+func execPathStmt(db *sql.DB, baseQuery string, paths []string) (sql.Result, error) {
+	if len(paths) == 1 {
+		return db.Exec(baseQuery+` = ?`, paths[0])
+	}
+	return db.Exec(baseQuery+` IN (?, ?)`, paths[0], paths[1])
+}
+
+func execPathStmtWithGroup(db *sql.DB, baseQuery string, groupID int64, paths []string) (sql.Result, error) {
+	if len(paths) == 1 {
+		return db.Exec(baseQuery+` = ?`, groupID, paths[0])
+	}
+	return db.Exec(baseQuery+` IN (?, ?)`, groupID, paths[0], paths[1])
 }

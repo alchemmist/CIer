@@ -56,7 +56,7 @@ clean:
 	rm -rf bin dist
 
 install:
-	go install ./cmd/$(BIN)
+	go install ./cmd/$(BINARY)
 
 staticcheck:
 	go install honnef.co/go/tools/cmd/staticcheck@latest
