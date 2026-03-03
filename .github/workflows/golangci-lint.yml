@@ -16,4 +16,4 @@ jobs:
           go-version-file: go.mod
 
       - name: GolangCI-Lint
-        run: make lint
+        run: make golangci-lint
