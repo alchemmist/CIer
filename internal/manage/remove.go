@@ -24,7 +24,7 @@ func Remove(database *sql.DB) error {
 		groupByName[g.Name] = g
 	}
 
-	chosen, done, err := tui.SelectGroupToEdit(groupNames)
+	chosen, done, err := selectGroupToEditFn(groupNames)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func Remove(database *sql.DB) error {
 		})
 	}
 
-	selectedPaths, err := tui.SelectWorkflows(group.Name, options, nil)
+	selectedPaths, err := selectWorkflowsFn(group.Name, options, nil)
 	if err != nil {
 		return err
 	}

@@ -12,6 +12,12 @@ import (
 	"cier/internal/tui"
 )
 
+var (
+	selectGroupToEditFn = tui.SelectGroupToEdit
+	selectWorkflowsFn   = tui.SelectWorkflows
+	openInNvimFn        = openInNvim
+)
+
 type Selection struct {
 	Group     db.Group
 	Workflows []db.Workflow
@@ -47,7 +53,7 @@ func Run(database *sql.DB, destRoot string) error {
 	}
 
 	for _, wf := range workflows {
-		if err := openInNvim(wf, targetDir); err != nil {
+		if err := openInNvimFn(wf, targetDir); err != nil {
 			return err
 		}
 	}
@@ -67,7 +73,7 @@ func collectSelections(database *sql.DB, groups []db.Group) ([]Selection, error)
 	}
 
 	for {
-		chosen, done, err := tui.SelectGroupToEdit(groupNames)
+		chosen, done, err := selectGroupToEditFn(groupNames)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +99,7 @@ func collectSelections(database *sql.DB, groups []db.Group) ([]Selection, error)
 			})
 		}
 
-		selectedPaths, err := tui.SelectWorkflows(group.Name, options, selectedByGroup[group.ID])
+		selectedPaths, err := selectWorkflowsFn(group.Name, options, selectedByGroup[group.ID])
 		if err != nil {
 			return nil, err
 		}

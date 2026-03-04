@@ -13,6 +13,11 @@ import (
 	"cier/internal/tui"
 )
 
+var (
+	selectGroupForPathFn = tui.SelectGroupForPath
+	openReadonlyFn       = openReadonly
+)
+
 func Run(database *sql.DB, roots []string) error {
 	if len(roots) == 0 {
 		roots = []string{"."}
@@ -77,13 +82,13 @@ func scanRoot(database *sql.DB, root string) error {
 		}
 
 		for {
-			choice, err := tui.SelectGroupForPath(groupNames, path, root)
+			choice, err := selectGroupForPathFn(groupNames, path, root)
 			if err != nil {
 				return err
 			}
 
 			if choice.Open {
-				if err := openReadonly(path); err != nil {
+				if err := openReadonlyFn(path); err != nil {
 					return err
 				}
 				continue

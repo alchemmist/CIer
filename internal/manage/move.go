@@ -24,7 +24,7 @@ func Move(database *sql.DB) error {
 		groupByName[g.Name] = g
 	}
 
-	chosen, done, err := tui.SelectGroupToEdit(groupNames)
+	chosen, done, err := selectGroupToEditFn(groupNames)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func Move(database *sql.DB) error {
 		})
 	}
 
-	selectedPaths, err := tui.SelectWorkflows(source.Name, options, nil)
+	selectedPaths, err := selectWorkflowsFn(source.Name, options, nil)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func Move(database *sql.DB) error {
 		return nil
 	}
 
-	destChoice, err := tui.SelectGroupOrNew(groupNames)
+	destChoice, err := selectGroupOrNewFn(groupNames)
 	if err != nil {
 		return err
 	}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"cier/internal/db"
-	"cier/internal/tui"
 )
 
 func BlacklistList(database *sql.DB) error {
@@ -57,7 +56,7 @@ func BlacklistRestore(database *sql.DB, paths []string) error {
 			options = append(options, item.Path)
 		}
 
-		selected, err := tui.SelectIgnoredToRestore(options)
+		selected, err := selectIgnoredToRestFn(options)
 		if err != nil {
 			return err
 		}
